@@ -1,5 +1,4 @@
 const adminAuth = (req, res, next) => {
-  console.log("middleware");
   let token = "xyz";
   let authentication = token === "xyz";
   if(!authentication){
