@@ -4,7 +4,7 @@ const validateProfileEdit = require("../utils/validateProfileEdit");
 const User = require("../model/userSchema");
 const profileRouter = express.Router();
 
-profileRouter.get("/profile", userAuth, (req, res) => {
+profileRouter.get("/profile/view", userAuth, (req, res) => {
   try {
     const user = req.user;
     res.status(200).json({ message: "User data fetched successfully", user });
