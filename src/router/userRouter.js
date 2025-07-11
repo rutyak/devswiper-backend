@@ -55,4 +55,36 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
   }
 });
 
+userRouter.get("/user/feeds", userAuth, async (req, res) => {
+  try {
+    let loggedInUser_id = req.user._id;
+
+    //form user
+    let feeds = await User.find({ _id: { $ne: loggedInUser_id } });
+
+    //from connection
+    let connections = await ConnectionRequest.find({
+      $or: [{ fromUserId: loggedInUser_id }, { toUserId: loggedInUser_id }],
+    });
+
+    //ids array
+    let connectionIds = new Set();
+    connections.forEach((connection) => {
+      connectionIds.add(connection.fromUserId.toString());
+      connectionIds.add(connection.toUserId.toString());
+    });
+
+    //filtering feeds
+    let feedData = feeds.filter(
+      (feed) => !connectionIds.has(feed._id.toString())
+    );
+
+    res.status(200).json({ message: "feeds fetched successfully", feedData });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+});
+
 module.exports = userRouter;
