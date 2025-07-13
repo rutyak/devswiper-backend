@@ -49,7 +49,7 @@ requestRouter.post("/request/send/:status/:id", userAuth, async (req, res) => {
     });
 
     res.status(201).json({
-      message: `${req.user.firstname} sent connection request to ${isValidUserId.firstname} successfully`,
+      message: `${req.user.firstname} ${status} connection request to ${isValidUserId.firstname} successfully`,
       connectionReq,
     });
   } catch (error) {

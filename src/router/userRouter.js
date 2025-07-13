@@ -5,7 +5,7 @@ const userAuth = require("../middleware/userAuth");
 const { populate } = require("../model/connectionRequest");
 const ConnectionRequest = require("../model/connectionRequest");
 
-const USER_INFO = "firstname lastname age gender skills";
+const USER_SAFE_DATA = "firstname lastname age gender skills";
 
 userRouter.get("/user/request/received", userAuth, async (req, res) => {
   try {
@@ -15,7 +15,7 @@ userRouter.get("/user/request/received", userAuth, async (req, res) => {
     const requests = await ConnectionRequest.find({
       toUserId: loggedInUser_id,
       status: "interested",
-    }).populate("fromUserId", USER_INFO);
+    }).populate("fromUserId", USER_SAFE_DATA);
 
     res.status(200).json({ message: "Fetched successfully!!", requests });
   } catch (error) {
@@ -35,8 +35,8 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
         { toUserId: loggedInUser_id, status: "accepted" },
       ],
     })
-      .populate("fromUserId", USER_INFO)
-      .populate("toUserId", USER_INFO);
+      .populate("fromUserId", USER_SAFE_DATA)
+      .populate("toUserId", USER_SAFE_DATA);
 
     console.log("connections: ", connections);
 
@@ -58,28 +58,34 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
 userRouter.get("/user/feeds", userAuth, async (req, res) => {
   try {
     let loggedInUser_id = req.user._id;
-
-    //form user
-    let feeds = await User.find({ _id: { $ne: loggedInUser_id } });
+    let page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 50;
+    let skip = (page - 1) * limit;
 
     //from connection
     let connections = await ConnectionRequest.find({
       $or: [{ fromUserId: loggedInUser_id }, { toUserId: loggedInUser_id }],
-    });
+    }).select("fromUserId toUserId");
 
     //ids array
     let connectionIds = new Set();
-    connections.forEach((connection) => {
-      connectionIds.add(connection.fromUserId.toString());
-      connectionIds.add(connection.toUserId.toString());
+    connections.forEach((conn) => {
+      connectionIds.add(conn.fromUserId.toString());
+      connectionIds.add(conn.toUserId.toString());
     });
 
-    //filtering feeds
-    let feedData = feeds.filter(
-      (feed) => !connectionIds.has(feed._id.toString())
-    );
+    //feeds
+    let feeds = await User.find({
+      $and: [
+        { _id: { $nin: Array.from(connectionIds) } },
+        { _id: { $ne: loggedInUser_id } },
+      ],
+    })
+      .select(USER_SAFE_DATA)
+      .skip(skip)
+      .limit(limit);
 
-    res.status(200).json({ message: "feeds fetched successfully", feedData });
+    res.status(200).json({ message: "feeds fetched successfully", feeds });
   } catch (error) {
     res
       .status(500)
