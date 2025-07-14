@@ -60,6 +60,7 @@ userRouter.get("/user/feeds", userAuth, async (req, res) => {
     let loggedInUser_id = req.user._id;
     let page = parseInt(req.query.page) || 1;
     let limit = parseInt(req.query.limit) || 50;
+    limit = limit > 50 ? 50 : limit;
     let skip = (page - 1) * limit;
 
     //from connection
